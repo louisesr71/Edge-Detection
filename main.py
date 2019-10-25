@@ -11,28 +11,30 @@ np.set_printoptions(threshold=100000)
 
 #time1, time2 = 0, 0
 
+def blur(pixels):
+    img = np.zeros((pixels.shape[0], pixels.shape[1]))
+    kernel = np.array([[1,1,1],[1,1,1],[1,1,1]])
+    for i in range(1, pixels.shape[0] - 1):
+        for j in range(1, pixels.shape[1] - 1):
+            center = pixels[i-1:i+2,j-1:j+2]
+            img[i][j] = np.sum(kernel * center) / 9.0
+    return img
+
+
 def kernelConvolution(kernelH, kernelV, pixels):
     edge = np.zeros((pixels.shape[0], pixels.shape[1]))
     for i in range(1, pixels.shape[0] - 1):
         for j in range(1, pixels.shape[1] - 1):
-            #global time1
-            #global time2
-            #since1 = time.time()
             center = pixels[i-1:i+2,j-1:j+2]
-            #time1 += time.time() - since1
-            #since2 = time.time()
             h = abs(np.sum(kernelH * center))
             v = abs(np.sum(kernelV * center))
-            #time2 += time.time() - since2
-            edge[i][j] = math.sqrt(h * h + v * v)
+            edge[i][j] = math.sqrt(h * h + v * v) ** 0.00001
     return edge
 
 
-scale = sys.argv[1] == '-scale'
-if scale:
-    imageFile = sys.argv[2]
-else:
-    imageFile = sys.argv[1]
+scale = '-scale' in sys.argv
+blurred = '-blur' in sys.argv
+imageFile = sys.argv[len(sys.argv) - 1]
 
 # Set timestamp.
 start = time.time()
@@ -46,23 +48,40 @@ rgb = np.array(img.convert(mode='RGB'))
 kh = np.array([[1,2,1],[0,0,0],[-1,-2,-1]])
 kv = np.array([[-1,0,1],[-2,0,2],[-1,0,1]])
 
-# Convolve each color plane.          
-#rgb[:,:,0] = kernelConvolution(kh, kv, rgb[:,:,0])
-#rgb[:,:,1] = kernelConvolution(kh, kv, rgb[:,:,1])
-#rgb[:,:,2] = kernelConvolution(kh, kv, rgb[:,:,2])
+# Separate color planes.
+red = rgb[:,:,0]
+green = rgb[:,:,1]
+blue = rgb[:,:,2]
 
-red = kernelConvolution(kh, kv, rgb[:,:,0])
-green = kernelConvolution(kh, kv, rgb[:,:,1])
-blue = kernelConvolution(kh, kv, rgb[:,:,2])
+if blurred:
+    blur(red)
+    blur(green)
+    blur(blue)
+
+
+red = kernelConvolution(kh, kv, red)
+green = kernelConvolution(kh, kv, green)
+blue = kernelConvolution(kh, kv, blue)
 
 m = max(np.amax(red), np.amax(green), np.amax(blue))
 sf = 250 / m
 
 if scale:
-    # Cubic scaling.
-    red = ((red * sf - 125) ** 3) / 125**2 + 125
-    green = ((green * sf - 125) ** 3) / 125**2 + 125
-    blue = ((blue * sf - 125) ** 3) / 125**2 + 125
+    # Cubic scaling:
+    #red = ((red * sf - 125) ** 3) / 125**2 + 125
+    #green = ((green * sf - 125) ** 3) / 125**2 + 125
+    #blue = ((blue * sf - 125) ** 3) / 125**2 + 125
+    
+    # Modified cubic scaling:
+    red = (1.0/25625.0)*(red * sf - 125)**3 + (10000.0/25625.0)*(red * sf - 125) + 125
+    green = (1.0/25625.0)*(green * sf - 125)**3 + (10000.0/25625.0)*(green * sf - 125) + 125
+    blue = (1.0/25625.0)*(blue * sf - 125)**3 + (10000.0/25625.0)*(blue * sf - 125) + 125
+    
+    # Signmoid scaling:
+    #red = 250 / (1 + math.e**(-(red * sf - 125)/25))
+    #green = 250 / (1 + math.e**(-(green * sf - 125)/25))
+    #blue = 250 / (1 + math.e**(-(blue * sf - 125)/25))
+    
 else:
     # No scaling.
     red *= sf

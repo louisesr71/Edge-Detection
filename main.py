@@ -28,9 +28,32 @@ def kernelConvolution(kernelH, kernelV, pixels):
             center = pixels[i-1:i+2,j-1:j+2]
             h = abs(np.sum(kernelH * center))
             v = abs(np.sum(kernelV * center))
-            edge[i][j] = math.sqrt(h * h + v * v) ** 0.00001
+            edge[i][j] = math.sqrt(h * h + v * v)
     return edge
 
+
+def detect_edges(pixels):
+    edge = np.zeros((pixels.shape[0], pixels.shape[1])).astype(int)
+    x = get_x_shift(pixels.astype(int)) - pixels
+    y = get_y_shift(pixels.astype(int)) - pixels
+    for i in range(1, pixels.shape[0] - 1):
+        for j in range(1, pixels.shape[1] - 1):
+            h = 1 * x[i-1][j+1] + 2 * x[i][j+1] + 1 * x[i+1][j+1]
+            v = 1 * y[i+1][j-1] + 2 * y[i+1][j] + 1 * y[i+1][j+1]
+            edge[i][j] = np.sqrt(h * h + v * v)
+    return edge.astype(float)
+            
+
+def get_x_shift(pixels):
+    transformed = np.copy(pixels)
+    for i in range(transformed.shape[0]):
+        transformed[i] = np.append([0, 0], transformed[i][:-2])
+    return transformed
+
+def get_y_shift(pixels):
+    transformed = np.copy(pixels)
+    transformed = np.append(np.zeros((2, transformed.shape[1])), transformed[:-2], axis=0)
+    return transformed
 
 scale = '-scale' in sys.argv
 blurred = '-blur' in sys.argv
@@ -59,9 +82,12 @@ if blurred:
     blur(blue)
 
 
-red = kernelConvolution(kh, kv, red)
-green = kernelConvolution(kh, kv, green)
-blue = kernelConvolution(kh, kv, blue)
+#red = kernelConvolution(kh, kv, red)
+#green = kernelConvolution(kh, kv, green)
+#blue = kernelConvolution(kh, kv, blue)
+red = detect_edges(red)
+green = detect_edges(green)
+blue = detect_edges(blue)
 
 m = max(np.amax(red), np.amax(green), np.amax(blue))
 sf = 250 / m

@@ -33,15 +33,15 @@ def kernelConvolution(kernelH, kernelV, pixels):
 
 
 def detect_edges(pixels):
-    edge = np.zeros((pixels.shape[0], pixels.shape[1])).astype(int)
-    x = get_x_shift(pixels.astype(int)) - pixels
-    y = get_y_shift(pixels.astype(int)) - pixels
+    edge = np.zeros((pixels.shape[0], pixels.shape[1]))
+    x = get_x_shift(pixels) - pixels
+    y = get_y_shift(pixels) - pixels
     for i in range(1, pixels.shape[0] - 1):
         for j in range(1, pixels.shape[1] - 1):
             h = 1 * x[i-1][j+1] + 2 * x[i][j+1] + 1 * x[i+1][j+1]
             v = 1 * y[i+1][j-1] + 2 * y[i+1][j] + 1 * y[i+1][j+1]
             edge[i][j] = np.sqrt(h * h + v * v)
-    return edge.astype(float)
+    return edge
             
 
 def get_x_shift(pixels):
@@ -64,7 +64,7 @@ start = time.time()
 
 # Convert image to array.
 img = Image.open(imageFile)
-rgb = np.array(img.convert(mode='RGB'))
+rgb = np.array(img.convert(mode='RGB')).astype(float)
 
 
 # Kernels

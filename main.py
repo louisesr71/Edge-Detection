@@ -91,6 +91,7 @@ blue = detect_edges(blue)
 
 m = max(np.amax(red), np.amax(green), np.amax(blue))
 sf = 250 / m
+#sf = 300 / m
 
 if scale:
     # Cubic scaling:
